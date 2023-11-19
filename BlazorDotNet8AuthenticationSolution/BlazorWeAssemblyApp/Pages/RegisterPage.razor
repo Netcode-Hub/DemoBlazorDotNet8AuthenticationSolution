@@ -1,0 +1,51 @@
+﻿@page "/register"
+@inject AuthenticationStateProvider authStateProvider
+@inject NavigationManager NavManager
+@inject HttpClient httpClient
+<div class="container">
+    <div class="row">
+        <div class="col-md-6">
+            <EditForm Model="RegisterUser" OnValidSubmit="HandleRegister">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+                @if (!string.IsNullOrEmpty(Message))
+                {
+                    <div class="alert alert-warning">@Message</div>
+                }
+                <div class="card">
+                    <div class="card-header">Please Login</div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label class="form-label">Email Address</label>
+                            <InputText @bind-Value="RegisterUser.Email" class="form-control"></InputText>
+                        </div>
+                        <div class="form-group mt-3">
+                            <label class="form-label">Password</label>
+                            <InputText @bind-Value="RegisterUser.Password" class="form-control"></InputText>
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <button type="submit" class="btn btn-primary">Register</button>
+                    </div>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+</div>
+
+@code {
+    private RegisterUser RegisterUser { get; set; } = new();
+    private string? Message;
+    private async Task HandleRegister()
+    {
+        Message = string.Empty;
+        var response = await httpClient.PostAsJsonAsync("register", RegisterUser);
+        if (!response.IsSuccessStatusCode)
+        {
+            Message = "Error occured";
+            return;
+        }
+        RegisterUser = new();
+        NavManager.NavigateTo("/login");
+    }
+}

@@ -1,7 +1,7 @@
 ﻿@page "/weather"
-@using BlazorWebAssemblyApp.Services
-@using SharedLibrary.Models
-@inject IClientService service
+@using BlazorDotNet8AuthenticationSolution.Shared.Models
+@inject HttpClient Http
+
 <PageTitle>Weather</PageTitle>
 
 <h1>Weather</h1>
@@ -42,7 +42,6 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-       forecasts = await service.GetWeatherForecasts();
+        forecasts = await Http.GetFromJsonAsync<WeatherForecast[]>("api/WeatherForecast");
     }
-
 }

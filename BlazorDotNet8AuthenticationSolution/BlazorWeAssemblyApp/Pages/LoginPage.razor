@@ -1,0 +1,63 @@
+﻿@page "/login"
+@inject AuthenticationStateProvider authStateProvider 
+@inject NavigationManager NavManager
+@inject HttpClient httpClient
+<div class="container">
+    <div class="row">
+        <div class="col-md-6">
+            <EditForm Model="LoginUser" OnValidSubmit="HandleLogin">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+                @if ( !string.IsNullOrEmpty(Message))
+                {
+                    <div class="alert alert-warning">@Message</div>
+                }
+                <div class="card">
+                    <div class="card-header">Please Login</div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label class="form-label">Email Address</label>
+                            <InputText @bind-Value="LoginUser.Email" class="form-control"></InputText>
+                        </div>
+                        <div class="form-group mt-3">
+                            <label class="form-label">Password</label>
+                            <InputText @bind-Value="LoginUser.Password" class="form-control"></InputText>
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <button type="submit" class="btn btn-primary">Login</button>
+                    </div>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+</div>
+
+@code {
+    private LoginUser LoginUser { get; set; } = new();
+    private string? Message;
+    private async Task HandleLogin()
+    {
+        Message = string.Empty;
+        var response = await httpClient.PostAsJsonAsync("login", LoginUser);
+        if (!response.IsSuccessStatusCode)
+        {
+            Message = "Invalid Credentials";
+            return;
+        }
+
+        var result = await response.Content.ReadFromJsonAsync<LoginResponse>();
+        if (string.IsNullOrEmpty(result!.AccessToken)) return;
+
+        httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", result.AccessToken);
+        var getUserClaims = await httpClient.GetAsync("manage/info");
+        if (!getUserClaims.IsSuccessStatusCode) return;
+
+        var userDetails = await getUserClaims.Content.ReadFromJsonAsync<UserDetails>();
+        var authenticationModel = new AuthenticationModel() { Token = result.AccessToken, RefreshToken = result.RefreshToken, Username = userDetails!.Email };
+
+        var customAuthStateProvider = (CustomAuthenticationStateProvider)authStateProvider;
+        await customAuthStateProvider.UpdateAuthenticationState(authenticationModel);
+        NavManager.NavigateTo("/", replace: true);
+    }
+}
